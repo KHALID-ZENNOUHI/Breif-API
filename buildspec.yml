@@ -14,7 +14,7 @@ phases:
       - composer require --dev phpunit/phpunit
   build:
     commands:
-      - php artisan test
+      - ./vendor/bin/phpunit --testsuite=Unit
 
 artifacts:
   files:
@@ -24,3 +24,4 @@ artifacts:
 proxy:
   upload-artifacts: yes
   logs: yes
+
