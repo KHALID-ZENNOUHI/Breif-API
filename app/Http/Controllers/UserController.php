@@ -9,48 +9,36 @@ class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
      */
     public function index()
     {
         $users = User::all();
         if($users->isEmpty()){
             return response()->json([
-                'status' => 404,
-                'message' => 'No users found',
+                'data' => 'No users found',
             ], 404);
+        }else{
+            return response()->json([
+                'data'=> $users
+            ], 200);
         }
-        return response()->json([
-            'status' => 200,
-            'users' => $users,
-        ], 200);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
      * Store a newly created resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
     {
-        $validate = validator($request->all(), [
+        $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
         ]);
-
-        if($validate->fails()){
-            return response()->json([
-                'status' => 400,
-                'message' => 'Validation failed',
-                'errors' => $validate->errors(),
-            ], 400);
-        }
 
         $user = User::create([
             'name' => $request->name,
@@ -58,102 +46,41 @@ class UserController extends Controller
             'password' => bcrypt($request->password),
         ]);
 
-        if($user){
-            return response()->json([
-                'status' => 201,
-                'message' => 'User created successfully',
-                'user' => $user,
-            ], 201);
-        }
-
-        return response()->json([
-            'status' => 500,
-            'message' => 'Failed to create user',
-        ], 500);
-        
+        return response()->json($user, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show($id)
     {
-        //
+        $user = User::findOrFail($id);
+        return response()->json($user);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    
+    public function update(Request $request, $id)
     {
-        //
-    }
+        $user = User::findOrFail($id);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        $user = USer::findOrfail($id);
-
-        if(!$user){
-            return response()->json([
-                'status'=> 404,
-                'message' => 'User not found',
-            ], 404);
-        }
-
-        $validate = $request->validator($request->all(), [
+        $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,'.$id,
-            'password' => 'required|string|min:8',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'sometimes|required|string|min:8',
         ]);
-
-        if($validate->fails()){
-            return response()->json([
-                'status' => 400,
-                'message' => 'Validation failed',
-                'errors' => $validate->errors(),
-            ], 400);
-        }
 
         $user->update($request->all());
 
-        if($user){
-            return response()->json([
-                'status' =>200,
-                'message' => "User updated successfully",
-            ], 200);
+        if ($request->has('password')) {
+            $user->password = bcrypt($request->password);
+            $user->save();
         }
 
-        return response()->json([
-            'status' => 500,
-            'message' => 'Failed to update user',
-        ], 500);
+        return response()->json(['data' => $user], 202);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        $user = User::findOrfail($id);
-        if(!$user){
-            return response()->json([
-                'status' =>404,
-                'message' => 'User not found',
-            ], 404);
-        }
+        $user = User::findOrFail($id);
         $user->delete();
-        if(!$user){
-            return response()->json([
-                'status' =>500,
-                'message' => 'Failed to delete user',
-            ], 500);
-        }
-        return  response()->json([
-            'status' => 200,
-            'message' => 'User deleted successfully',
-        ], 200);
+
+        return response()->json(null, 204);
     }
 }
